@@ -1,1 +1,70 @@
-Hello World
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Map Overlay — Letztes Jahr</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <aside id="sidebar">
+    <header>
+      <h1>Map overlay</h1>
+      <p class="hint">Stack the floor maps and align them by the elevator.</p>
+    </header>
+
+    <label class="add-button">
+      <input id="file-input" type="file" accept="image/*" multiple hidden />
+      <span>+ Add maps</span>
+    </label>
+
+    <div id="layers"></div>
+
+    <footer>
+      <button id="reset-view" type="button">Reset view</button>
+      <p class="hint small">
+        Click <em>Set anchor</em> then click the elevator on that map.
+        Drag the viewport to pan, scroll to zoom.
+      </p>
+    </footer>
+  </aside>
+
+  <main id="stage">
+    <div id="viewport">
+      <div id="world"></div>
+      <div id="crosshair"></div>
+    </div>
+    <div id="empty-state">
+      <p>Add map images to begin.</p>
+    </div>
+  </main>
+
+  <template id="layer-template">
+    <div class="layer">
+      <div class="layer-head">
+        <input class="layer-name" type="text" />
+        <button class="layer-toggle" type="button" title="Show/hide">●</button>
+        <button class="layer-remove" type="button" title="Remove">×</button>
+      </div>
+      <div class="row">
+        <label>Opacity</label>
+        <input class="opacity" type="range" min="0" max="1" step="0.01" value="0.5" />
+        <span class="opacity-val">50%</span>
+      </div>
+      <div class="row">
+        <label>Scale</label>
+        <input class="scale" type="range" min="0.1" max="3" step="0.005" value="1" />
+        <span class="scale-val">1.00×</span>
+      </div>
+      <div class="row">
+        <label>Rotate</label>
+        <input class="rotate" type="range" min="-180" max="180" step="0.5" value="0" />
+        <span class="rotate-val">0°</span>
+      </div>
+      <button class="set-anchor" type="button">Set anchor</button>
+    </div>
+  </template>
+
+  <script src="index.js"></script>
+</body>
+</html>
