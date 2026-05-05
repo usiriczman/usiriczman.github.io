@@ -159,6 +159,7 @@ function startAnchoring(layer) {
   anchoringLayer = layer;
   layer.card.classList.add("anchoring");
   stage.classList.add("anchoring");
+  closeDrawer();
 }
 
 function cancelAnchoring() {
@@ -209,49 +210,106 @@ stage.addEventListener("click", (e) => {
   cancelAnchoring();
 });
 
-// Pan & zoom ------------------------------------------------------------
+// Pan, pinch & zoom ----------------------------------------------------
 
-let isPanning = false;
+const pointers = new Map(); // id -> { x, y }
 let didDrag = false;
-let panStart = { x: 0, y: 0, tx: 0, ty: 0 };
+let panStart = null;   // { x, y, tx, ty } for single-pointer pan
+let pinchStart = null; // { dist, midX, midY, zoom, tx, ty }
+
+function viewportCenter() {
+  const rect = viewport.getBoundingClientRect();
+  return { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 };
+}
+
+function beginPan(p) {
+  panStart = { x: p.x, y: p.y, tx: view.tx, ty: view.ty };
+}
+
+function beginPinch() {
+  const [a, b] = [...pointers.values()];
+  pinchStart = {
+    dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+    midX: (a.x + b.x) / 2,
+    midY: (a.y + b.y) / 2,
+    zoom: view.zoom,
+    tx: view.tx,
+    ty: view.ty,
+  };
+}
 
 stage.addEventListener("pointerdown", (e) => {
-  if (e.button !== 0) return;
-  isPanning = true;
-  didDrag = false;
-  panStart = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty };
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   stage.setPointerCapture(e.pointerId);
-  stage.classList.add("panning");
+
+  if (pointers.size === 1) {
+    didDrag = false;
+    beginPan({ x: e.clientX, y: e.clientY });
+    stage.classList.add("panning");
+  } else if (pointers.size === 2) {
+    didDrag = true;
+    panStart = null;
+    beginPinch();
+  }
 });
 
 stage.addEventListener("pointermove", (e) => {
-  if (!isPanning) return;
-  const dx = e.clientX - panStart.x;
-  const dy = e.clientY - panStart.y;
-  if (!didDrag && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) didDrag = true;
-  view.tx = panStart.tx + dx;
-  view.ty = panStart.ty + dy;
-  applyWorldTransform();
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (pointers.size === 1 && panStart) {
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+    if (!didDrag && Math.hypot(dx, dy) > 6) didDrag = true;
+    view.tx = panStart.tx + dx;
+    view.ty = panStart.ty + dy;
+    applyWorldTransform();
+  } else if (pointers.size === 2 && pinchStart) {
+    const [a, b] = [...pointers.values()];
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const factor = dist / pinchStart.dist;
+    const newZoom = clamp(pinchStart.zoom * factor, 0.05, 20);
+
+    const { cx, cy } = viewportCenter();
+    const wx = (pinchStart.midX - cx - pinchStart.tx) / pinchStart.zoom;
+    const wy = (pinchStart.midY - cy - pinchStart.ty) / pinchStart.zoom;
+    view.zoom = newZoom;
+    view.tx = midX - cx - wx * newZoom;
+    view.ty = midY - cy - wy * newZoom;
+    applyWorldTransform();
+  }
 });
 
-stage.addEventListener("pointerup", (e) => {
-  if (!isPanning) return;
-  isPanning = false;
-  stage.releasePointerCapture(e.pointerId);
-  stage.classList.remove("panning");
-});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
+
+  if (pointers.size === 0) {
+    panStart = null;
+    pinchStart = null;
+    stage.classList.remove("panning");
+  } else if (pointers.size === 1) {
+    // Pinch ended with a finger remaining — continue as pan, no jump.
+    pinchStart = null;
+    const remaining = [...pointers.values()][0];
+    beginPan(remaining);
+  }
+}
+
+stage.addEventListener("pointerup", endPointer);
+stage.addEventListener("pointercancel", endPointer);
 
 stage.addEventListener("wheel", (e) => {
   e.preventDefault();
-  const rect = viewport.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  // World coord under cursor before zoom.
+  const { cx, cy } = viewportCenter();
   const wx = (e.clientX - cx - view.tx) / view.zoom;
   const wy = (e.clientY - cy - view.ty) / view.zoom;
   const factor = Math.exp(-e.deltaY * 0.0015);
   view.zoom = clamp(view.zoom * factor, 0.05, 20);
-  // Keep that world point under cursor.
   view.tx = e.clientX - cx - wx * view.zoom;
   view.ty = e.clientY - cy - wy * view.zoom;
   applyWorldTransform();
@@ -265,5 +323,17 @@ resetBtn.addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && anchoringLayer) cancelAnchoring();
 });
+
+// Mobile drawer --------------------------------------------------------
+
+const drawerToggle = document.getElementById("drawer-toggle");
+const drawerBackdrop = document.getElementById("drawer-backdrop");
+
+function openDrawer() { document.body.classList.add("drawer-open"); }
+function closeDrawer() { document.body.classList.remove("drawer-open"); }
+function toggleDrawer() { document.body.classList.toggle("drawer-open"); }
+
+drawerToggle.addEventListener("click", toggleDrawer);
+drawerBackdrop.addEventListener("click", closeDrawer);
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
