@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1714" />
   <title>Map Overlay — Letztes Jahr</title>
   <link rel="stylesheet" href="index.css" />
 </head>
@@ -23,11 +24,17 @@
     <footer>
       <button id="reset-view" type="button">Reset view</button>
       <p class="hint small">
-        Click <em>Set anchor</em> then click the elevator on that map.
-        Drag the viewport to pan, scroll to zoom.
+        Tap <em>Set anchor</em>, then tap the elevator on that map.
+        Drag to pan, pinch or scroll to zoom.
       </p>
     </footer>
   </aside>
+
+  <div id="drawer-backdrop"></div>
+  <button id="drawer-toggle" type="button" aria-label="Toggle layers panel">
+    <span aria-hidden="true">☰</span>
+    <span class="label">Layers</span>
+  </button>
 
   <main id="stage">
     <div id="viewport">

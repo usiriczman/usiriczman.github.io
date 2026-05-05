@@ -18,6 +18,8 @@ html, body {
   color: var(--ink);
   font-family: 'PT Sans', system-ui, sans-serif;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -181,6 +183,8 @@ body {
     radial-gradient(circle at 50% 50%, #2a241e 0%, #15120f 100%);
   overflow: hidden;
   cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 #stage.panning { cursor: grabbing; }
@@ -246,3 +250,81 @@ body {
 }
 
 #empty-state.hidden { display: none; }
+
+/* Drawer toggle (mobile) ---------------------------------------------- */
+
+#drawer-backdrop, #drawer-toggle { display: none; }
+
+/* Mobile layout -------------------------------------------------------- */
+
+@media (max-width: 800px) {
+  body { grid-template-columns: 1fr; }
+
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(360px, 88vw);
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.45);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  body.drawer-open #sidebar { transform: none; }
+
+  #drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+    z-index: 20;
+  }
+
+  body.drawer-open #drawer-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #drawer-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index: 10;
+    padding: 12px 18px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 14px;
+    font-family: inherit;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+  }
+
+  #drawer-toggle:active { transform: scale(0.97); }
+
+  .add-button { padding: 14px; font-size: 15px; margin: 10px 14px 14px; }
+  .layer { padding: 12px 14px; }
+  .layer-toggle, .layer-remove { width: 30px; height: 30px; font-size: 14px; }
+  .layer-name { font-size: 15px; padding: 4px 0; }
+  .row { grid-template-columns: 56px 1fr 50px; gap: 10px; margin: 8px 0; }
+  .row label { font-size: 12px; }
+  .row span { font-size: 12px; }
+  .row input[type=range] { height: 28px; }
+  .set-anchor { padding: 12px; font-size: 13px; margin-top: 10px; }
+  #reset-view { padding: 12px; font-size: 13px; }
+
+  #sidebar header { padding: max(16px, env(safe-area-inset-top)) 18px 8px; }
+  #layers { -webkit-overflow-scrolling: touch; }
+
+  #stage { grid-column: 1 / -1; }
+}
